@@ -1,5 +1,8 @@
-package inter;
-
-public class Temp {
-    
+package inter;//文件Temp.java
+import lexer.*;import symbols.*;
+public class Temp extends Expr{
+    static int count=0;
+    int number=0;
+    public Temp(Type p){super(Word.temp,p);number=++count;}
+    public String toString(){ return "t"+number;}
 }
