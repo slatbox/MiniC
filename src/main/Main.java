@@ -7,5 +7,8 @@ public class Main {
         Parser parse = new Parser(lex);
         parse.program();
         System.out.write('\n');
+        
+        
     }
+    
 }

@@ -1,0 +1,5 @@
+{
+/*fdsfsd */
+int x;int i; //test1
+x = x + i; //test2
+}

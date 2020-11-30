@@ -20,8 +20,10 @@ public class Parser {
     }
 
     void match(int t) throws IOException {
-        if (look.tag == t) move();
-        else error("syntax error");
+        if (look.tag == t) 
+            move();
+        else 
+            error("syntax error");
     }
 
     public void program() throws IOException {// program->block
