@@ -7,6 +7,7 @@ public class Parser {
     int used = 0;//用于变量声明的存储位置
 
     public Parser(Lexer l) throws IOException {
+        Node.initOutputStream();
         lex = l;
         move();
     }

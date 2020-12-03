@@ -1,5 +1,12 @@
 {
-/*fdsfsd */
-int x;int i; //test1
-x = x + i; //test2
+int x;int k;
+x = x + 1;
+{
+    int x;int k;
+    x = k + x;
+    x = x + 1;
+    k = k + 1;
+    x = x * k;
+}
+
 }
