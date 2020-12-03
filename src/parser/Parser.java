@@ -1,10 +1,15 @@
 package parser;//文件Parser.java
-import java.io.*;import lexer.*;import symbols.*;import inter.*;
+
+import java.io.*;
+import lexer.*;
+import symbols.*;
+import inter.*;
+
 public class Parser {
-    private Lexer lex;//这个语法分析器的词法分析器
-    private Token look;//向前看词法单元
-    Env top = null;//当前或顶层的符号表
-    int used = 0;//用于变量声明的存储位置
+    private Lexer lex;// 这个语法分析器的词法分析器
+    private Token look;// 向前看词法单元
+    Env top = null;// 当前或顶层的符号表
+    int used = 0;// 用于变量声明的存储位置
 
     public Parser(Lexer l) throws IOException {
         Node.initOutputStream();
@@ -21,9 +26,9 @@ public class Parser {
     }
 
     void match(int t) throws IOException {
-        if (look.tag == t) 
+        if (look.tag == t)
             move();
-        else 
+        else
             error("syntax error");
     }
 
@@ -36,7 +41,7 @@ public class Parser {
         s.emitlabel(after);
     }
 
-    Stmt block() throws IOException { //block->{ decls stmts}
+    Stmt block() throws IOException { // block->{ decls stmts}
         match('{');
         Env savedEnv = top;
         top = new Env(top);
@@ -48,7 +53,7 @@ public class Parser {
     }
 
     void decls() throws IOException {
-        while (look.tag == Tag.BASIC) {//D->type ID;
+        while (look.tag == Tag.BASIC) {// D->type ID;
             Type p = type();
             Token tok = look;
             match(Tag.ID);
@@ -60,10 +65,12 @@ public class Parser {
     }
 
     Type type() throws IOException {
-        Type p = (Type) look;//期望look.tag==Tag.BASIC
+        Type p = (Type) look;// 期望look.tag==Tag.BASIC
         match(Tag.BASIC);
-        if (look.tag != '[') return p;//T->basic
-        else return dims(p);//返回数组类型
+        if (look.tag != '[')
+            return p;// T->basic
+        else
+            return dims(p);// 返回数组类型
     }
 
     Type dims(Type p) throws IOException {
@@ -77,14 +84,16 @@ public class Parser {
     }
 
     Stmt stmts() throws IOException {
-        if (look.tag == '}') return Stmt.Null;
-        else return new Seq(stmt(), stmts());
+        if (look.tag == '}')
+            return Stmt.Null;
+        else
+            return new Seq(stmt(), stmts());
     }
 
     Stmt stmt() throws IOException {
         Expr x;
-        Stmt s1, s2;
-        Stmt savedStmt;//用于为break语句保存外层的循环语句
+        Stmt s1, s2,s3;
+        Stmt savedStmt;// 用于为break语句保存外层的循环语句
         switch (look.tag) {
             case ';':
                 move();
@@ -95,7 +104,8 @@ public class Parser {
                 x = bool();
                 match(')');
                 s1 = stmt();
-                if (look.tag != Tag.ELSE) return new If(x, s1);
+                if (look.tag != Tag.ELSE)
+                    return new If(x, s1);
                 match(Tag.ELSE);
                 s2 = stmt();
                 return new Else(x, s1, s2);
@@ -109,7 +119,7 @@ public class Parser {
                 match(')');
                 s1 = stmt();
                 whilenode.init(x, s1);
-                Stmt.Enclosing = savedStmt;//重置 Stmt.Enclosing
+                Stmt.Enclosing = savedStmt;// 重置 Stmt.Enclosing
                 return whilenode;
             case Tag.DO:
                 Do donode = new Do();
@@ -123,8 +133,23 @@ public class Parser {
                 match(')');
                 match(';');
                 donode.init(s1, x);
-                Stmt.Enclosing = savedStmt;//重置Stmt,Enclosing
+                Stmt.Enclosing = savedStmt;// 重置Stmt,Enclosing
                 return donode;
+            case Tag.FOR:
+                For fornode = new For();
+                savedStmt = Stmt.Enclosing;
+                Stmt.Enclosing = fornode;
+                match(Tag.FOR);
+                match('(');
+                s1 = stmt();
+                x = bool();
+                match(';');
+                s2 = stmt();
+                match(')');
+                s3 = stmt();
+                fornode.init(s1, x, s2, s3);
+                Stmt.Enclosing = savedStmt;// 重置 Stmt.Enclosing
+                return fornode;
             case Tag.BREAK:
                 match(Tag.BREAK);
                 match(';');
@@ -141,11 +166,12 @@ public class Parser {
         Token t = look;
         match(Tag.ID);
         Id id = top.get(t);
-        if (id == null) error(t.toString() + "undeclared");
-        if (look.tag == '=') { //S->id=E；
+        if (id == null)
+            error(t.toString() + "undeclared");
+        if (look.tag == '=') { // S->id=E；
             move();
             stmt = new Set(id, bool());
-        } else { //S->L=E；
+        } else { // S->L=E；
             Access x = offset(id);
             match('=');
             stmt = new SetElem(x, bool());
@@ -227,7 +253,8 @@ public class Parser {
             Token tok = look;
             move();
             return new Not(tok, unary());
-        } else return factor();
+        } else
+            return factor();
     }
 
     Expr factor() throws IOException {
@@ -260,27 +287,30 @@ public class Parser {
             case Tag.ID:
                 // String s = look.toString();
                 Id id = top.get(look);
-                if (id == null) error(look.toString() + " undeclared");
+                if (id == null)
+                    error(look.toString() + " undeclared");
                 move();
-                if (look.tag != '[') return id;
-                else return offset(id);
+                if (look.tag != '[')
+                    return id;
+                else
+                    return offset(id);
         }
     }
 
-    Access offset(Id a) throws IOException { //I->[E]I[E]I
+    Access offset(Id a) throws IOException { // I->[E]I[E]I
         Expr i;
         Expr w;
         Expr t1, t2;
-        Expr loc;//继承id
+        Expr loc;// 继承id
         Type type = a.type;
         match('[');
         i = bool();
-        match(']');//第一个下标，I->[E]
+        match(']');// 第一个下标，I->[E]
         type = ((Array) type).of;
         w = new Constant(type.width);
         t1 = new Arith(new Token('*'), i, w);
         loc = t1;
-        while (look.tag == '[') {//多维下标，I->[E]I
+        while (look.tag == '[') {// 多维下标，I->[E]I
             match('[');
             i = bool();
             match(']');

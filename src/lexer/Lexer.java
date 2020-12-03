@@ -24,6 +24,8 @@ public class Lexer {
         reserve(new Word("while", Tag.WHILE));
         reserve(new Word("do", Tag.DO));
         reserve(new Word("break", Tag.BREAK));
+        
+        reserve(new Word("for",Tag.FOR));
         // 保留其他地方定义的对象的词素
         reserve(Word.True);
         reserve(Word.False);
