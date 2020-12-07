@@ -45,7 +45,7 @@ public class Parser {
         match('{');
         Env savedEnv = top;
         top = new Env(top);
-        decls();
+        // decls();
         Stmt s = stmts();
         match('}');
         top = savedEnv;
@@ -62,6 +62,48 @@ public class Parser {
             top.put(tok, id);
             used = used + p.width;
         }
+    }
+
+    Stmt decl() throws IOException {
+        Type p = type();
+        Token tok = look;
+        match(Tag.ID);
+        Stmt stmt = new Stmt();
+        Id id = new Id((Word) tok, p, used);
+        top.put(tok, id);
+        used = used + p.width;
+        if(this.look.tag == '=')
+        {
+            match('=');
+            stmt = new Set(id, bool());
+        }
+        match(';');
+        return stmt;
+    }
+
+    Stmt decl_tail() throws IOException {
+        Stmt stmt;
+        Token t = look;
+        match(Tag.ID);
+        try {
+            match(';');
+            return stmt();
+        } catch (Exception e) {
+            Id id = top.get(t);
+            if (id == null)
+                error(t.toString() + "undeclared");
+            if (look.tag == '=') { // S->id=E；
+                move();
+                stmt = new Set(id, bool());
+            } else { // S->L=E；
+                Access x = offset(id);
+                match('=');
+                stmt = new SetElem(x, bool());
+            }
+            match(';');
+            return stmt;
+        }
+
     }
 
     Type type() throws IOException {
@@ -92,7 +134,7 @@ public class Parser {
 
     Stmt stmt() throws IOException {
         Expr x;
-        Stmt s1, s2,s3;
+        Stmt s1, s2, s3;
         Stmt savedStmt;// 用于为break语句保存外层的循环语句
         switch (look.tag) {
             case ';':
@@ -156,6 +198,8 @@ public class Parser {
                 return new Break();
             case '{':
                 return block();
+            case Tag.BASIC:
+                return decl();
             default:
                 return assign();
         }
