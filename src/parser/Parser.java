@@ -5,12 +5,16 @@ import lexer.*;
 import symbols.*;
 import inter.*;
 
+import java.util.ArrayList;
+import java.util.Hashtable;
+
 public class Parser {
     private Lexer lex;// 这个语法分析器的词法分析器
     private Token look;// 向前看词法单元
-    Env top = null;// 当前或顶层的符号表
+    public Env top = null;// 当前或顶层的符号表
     int used = 0;// 用于变量声明的存储位置
-
+    int funId = 0;
+    private Hashtable<String,Fun> funEnv;
     public Parser(Lexer l) throws IOException {
         Node.initOutputStream();
         lex = l;
@@ -33,19 +37,18 @@ public class Parser {
     }
 
     public void program() throws IOException {// program->block
-        Stmt s = block();
-        int begin = s.newlabel();
-        int after = s.newlabel();
-        s.emitlabel(begin);
-        s.gen(begin, after);
-        s.emitlabel(after);
+        this.funEnv = new Hashtable<String,Fun>();
+        this.funEnv.put("printNum", Fun.printNum);
+        this.funEnv.put("inputNum",Fun.inputNum);
+        Fun functions = funs();
+        functions.gen();
     }
+    
 
     Stmt block() throws IOException { // block->{ decls stmts}
         match('{');
         Env savedEnv = top;
         top = new Env(top);
-        // decls();
         Stmt s = stmts();
         match('}');
         top = savedEnv;
@@ -68,43 +71,21 @@ public class Parser {
         Type p = type();
         Token tok = look;
         match(Tag.ID);
-        Stmt stmt = new Stmt();
         Id id = new Id((Word) tok, p, used);
+        Stmt stmt = new Decl(id);
         top.put(tok, id);
         used = used + p.width;
         if(this.look.tag == '=')
         {
             match('=');
-            stmt = new Set(id, bool());
+            Set tem = new Set(id, bool());
+            tem.firstTime = 1;
+            stmt = tem;
         }
         match(';');
         return stmt;
     }
 
-    Stmt decl_tail() throws IOException {
-        Stmt stmt;
-        Token t = look;
-        match(Tag.ID);
-        try {
-            match(';');
-            return stmt();
-        } catch (Exception e) {
-            Id id = top.get(t);
-            if (id == null)
-                error(t.toString() + "undeclared");
-            if (look.tag == '=') { // S->id=E；
-                move();
-                stmt = new Set(id, bool());
-            } else { // S->L=E；
-                Access x = offset(id);
-                match('=');
-                stmt = new SetElem(x, bool());
-            }
-            match(';');
-            return stmt;
-        }
-
-    }
 
     Type type() throws IOException {
         Type p = (Type) look;// 期望look.tag==Tag.BASIC
@@ -131,7 +112,85 @@ public class Parser {
         else
             return new Seq(stmt(), stmts());
     }
-
+    Fun funs() throws IOException{
+        if(look.tag == Lexer.END_OF_FILE)
+            return Fun.Null;
+        else
+            return new Funseq(fun(),funs());
+    }
+    Fun fun() throws IOException{
+        if(this.look.tag == Lexer.END_OF_FILE)
+            return Fun.Null;
+        P parms;
+        Stmt block;
+        Type p = type();
+        Token tok = look;
+        match(Tag.ID);
+        Id funHead = new Id((Word) tok, p, this.funId);
+        this.funId = this.funId + 1;
+        match('(');
+        parms = p();
+        match(')');
+        Fun function = new Fun(funHead,parms);
+        this.top = function.top;
+        this.funEnv.put(funHead.toString(),function);
+        block = block();
+        function.body = block; 
+        return function;
+    }
+    P p() throws IOException
+    {
+        Token tok = look;
+        if(tok.tag == Tag.BASIC)
+        {
+            Type p = type();
+            tok = look;
+            match(Tag.ID);
+            Id firstP = new Id((Word) tok, p, 0);
+            Pl plist = pl();
+            return new P(firstP,plist);
+        }
+        else 
+        {
+            return P.Null;
+        }
+        
+    }
+    Pl pl() throws IOException
+    {
+        Pl plist = new Pl();
+        while(this.look.tag != ')')
+        {
+            match(',');
+            Type p = type();
+            Token tok = look;
+            match(Tag.ID);
+            Id eachParm = new Id((Word) tok, p, 0);
+            plist.addParm(eachParm);
+        }
+        return plist;
+    }
+    Ret ret() throws IOException
+    {
+        match(Tag.RETURN);
+        Token t = look;
+        Id id = top.get(t);
+        match(Tag.ID); 
+        if (id == null)
+            error(t.toString() + "undeclared");
+        Ret ret;
+        if(look.tag != ';')
+        {
+            Access x = offset(id);
+            ret = new Ret(x);
+        }
+        else
+        {
+            ret = new Ret(id);
+        }
+        match(';');
+        return ret;
+    }
     Stmt stmt() throws IOException {
         Expr x;
         Stmt s1, s2, s3;
@@ -196,6 +255,8 @@ public class Parser {
                 match(Tag.BREAK);
                 match(';');
                 return new Break();
+            case Tag.RETURN:
+                return ret();
             case '{':
                 return block();
             case Tag.BASIC:
@@ -204,7 +265,7 @@ public class Parser {
                 return assign();
         }
     }
-
+    
     Stmt assign() throws IOException {
         Stmt stmt;
         Token t = look;
@@ -331,16 +392,41 @@ public class Parser {
             case Tag.ID:
                 // String s = look.toString();
                 Id id = top.get(look);
-                if (id == null)
-                    error(look.toString() + " undeclared");
+                if(id == null)
+                {
+                    Fun fun = this.funEnv.get(look.toString());
+                    move();
+                    if(fun == null)
+                        error("undeclared fun");
+                    if(look.tag =='(')
+                    {
+                        move();
+                        return callFun(fun.funHead);
+                    }
+                }
                 move();
                 if (look.tag != '[')
                     return id;
-                else
+                else 
                     return offset(id);
         }
     }
+    CallFun callFun(Id funId) throws IOException
+    {
+        ArrayList<String> parms = new ArrayList<String>();
 
+        while(look.tag != ')')
+        {
+            parms.add(look.toString());
+            move();
+            if(look.tag == ')')
+                break;
+            match(',');
+        }
+        match(')');
+        CallFun call = new CallFun(parms,funId);
+        return call;
+    }
     Access offset(Id a) throws IOException { // I->[E]I[E]I
         Expr i;
         Expr w;

@@ -1,3 +1,7 @@
 *.class
 *.txt
 *.zip
+*.jar
+*.asm
+*.bat
+*.txt

@@ -1,6 +1,21 @@
-{
-    float x = 1.2;
-    int y = 20;
+#include<stdlib.h>
 
+int computeTem(int x)
+{
+    int sum = 1;
+    int i = 0;
+    for(i = 1;i <= x;i = i + 1;)
+    {
+        sum = sum * i;
+    }
+    return sum;
+}
+int main()
+{
+    int x = inputNum();
+    int none;
+    int sum;
+    sum = computeTem(x);
+    none = printNum(sum);
     
 }

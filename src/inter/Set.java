@@ -3,7 +3,7 @@ import symbols.*;
 public class Set extends Stmt {
     public Id id;
     public Expr expr;
-
+    public int firstTime = 0;
     public Set(Id i, Expr x) {
         id = i;
         expr = x;
@@ -17,6 +17,11 @@ public class Set extends Stmt {
     }
 
     public void gen(int b, int a) {
+        if(this.firstTime == 1)
+        {
+            emit("local " + id.toString());
+            emitlabel(this.newlabel());
+        }
         emit(id.toString() + " = " + expr.gen().toString());
     }
 }

@@ -21,18 +21,32 @@ public class For extends Stmt {
         if (this.condition.type != Type.Bool) condition.error("boolean required in while");
     }
 
+    // public void gen(int b, int a) {
+    //     after = a;//保存标号a
+    //     int body_label = newlabel();
+    //     int condition_label = newlabel();
+    //     int update_label = newlabel();
+    //     this.enter.gen(b,body_label);
+    //     emitlabel(body_label);
+    //     body.gen(body_label,condition_label);
+    //     emitlabel(condition_label);
+    //     this.condition.jumping(0, a);
+    //     emitlabel(update_label);
+    //     this.update.gen(update_label,a);
+    //     emit("goto L" + body_label);
+    // }
     public void gen(int b, int a) {
-        after = a;//保存标号a
-        int body_label = newlabel();
+        after = a;
         int condition_label = newlabel();
+        int body_label = newlabel();
         int update_label = newlabel();
-        this.enter.gen(b,body_label);
-        emitlabel(body_label);
-        body.gen(body_label,condition_label);
+        this.enter.gen(b,condition_label);
         emitlabel(condition_label);
         this.condition.jumping(0, a);
+        emitlabel(body_label);
+        body.gen(condition_label,body_label);
         emitlabel(update_label);
         this.update.gen(update_label,a);
-        emit("goto L" + body_label);
+        emit("goto L" + condition_label);
     }
 }

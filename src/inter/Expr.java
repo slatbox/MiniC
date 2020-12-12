@@ -16,5 +16,5 @@ public class Expr extends Node{
         else if (f != 0) emit("iffalse " + test + " goto L" + f);
         else ;//不生成指令，因为t和f都直接穿越
     }
-        public String toString(){ return op.toString();}
+    public String toString(){ return op.toString();}
 }

@@ -2,14 +2,15 @@ package lexer;
 
 import java.io.*;
 import java.util.*;
+
+import Io.io;
 import symbols.*;
 
 //把字符串映射为字
 public class Lexer {
     public static int line = 1;
-    private static String source_path = "C:\\school_work\\computer_learning\\Java\\MiniC\\MiniC\\src\\main\\test.txt";
     private static FileInputStream reader;
-    private static char END_OF_FILE = (char)-1;
+    public  static char END_OF_FILE = (char)-1;
     char peek = ' ';
     Hashtable<String, Word> words = new Hashtable<String, Word>();
 
@@ -26,6 +27,7 @@ public class Lexer {
         reserve(new Word("break", Tag.BREAK));
         
         reserve(new Word("for",Tag.FOR));
+        reserve(new Word("return",Tag.RETURN));
         // 保留其他地方定义的对象的词素
         reserve(Word.True);
         reserve(Word.False);
@@ -33,11 +35,14 @@ public class Lexer {
         reserve(Type.Char);
         reserve(Type.Bool);
         reserve(Type.Float);
+        
     }
 
     public Lexer() throws IOException {
         try {
-            Lexer.reader = new FileInputStream(Lexer.source_path);
+            String dir = io.inputDir;
+            String fileName = io.inputName;
+            Lexer.reader = new FileInputStream(dir + File.separator + fileName);
         } catch (IOException e) {
             System.out.println(e);
         }
@@ -76,6 +81,11 @@ public class Lexer {
     public Token scan() throws IOException {
         this.scanBlank();
         // 消除注释
+        if(peek == '#')
+        {
+            while(peek != '\n')
+                this.readch();
+        }
         if (peek == '/') {
             try {
                 if (this.readch('*'))
