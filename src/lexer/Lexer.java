@@ -41,7 +41,7 @@ public class Lexer {
     public Lexer() throws IOException {
         try {
             String dir = io.inputDir;
-            String fileName = io.inputName;
+            String fileName = io.inputName + ".c";
             Lexer.reader = new FileInputStream(dir + File.separator + fileName);
         } catch (IOException e) {
             System.out.println(e);

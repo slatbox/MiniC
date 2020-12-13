@@ -11,8 +11,7 @@ public class Node{
         if(Node.output != null)
             return;
         try {
-            String fileName = io.outputName;
-            fileName = fileName.substring(0,fileName.lastIndexOf('.')) + "_inter.txt";
+            String fileName = io.outputName + "_inter.txt";
             String output_dir = io.outputDir;
             File file_path = new File(output_dir + File.separator + fileName);
             if(!file_path.exists())

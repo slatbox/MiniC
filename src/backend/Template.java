@@ -2,7 +2,6 @@ package backend;
 
 public class Template {
     public static String asmHead  = 
-    "include \\masm32\\include\\masm32rt.inc\n" + 
     ".data?\n" +
     "\tvalue dd ?\n" +
     ".data\n" +
@@ -96,6 +95,7 @@ public class Template {
 	"\tmov esp,ebp\n"+
 	"\tpop ebp\n"+
 	"\tret\n";
-
+	
+	
 
 }

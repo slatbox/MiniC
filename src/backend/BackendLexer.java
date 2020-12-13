@@ -20,7 +20,7 @@ public class BackendLexer {
     public BackendLexer() throws IOException {
         try {
             String outName = io.outputName;
-            String inter_name = outName.substring(0,outName.lastIndexOf('.')) + "_inter.txt";
+            String inter_name = outName + "_inter.txt";
             BackendLexer.reader = new FileInputStream(io.outputDir + File.separator + inter_name);
         } catch (IOException e) {
             System.out.println(e);

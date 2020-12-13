@@ -3,7 +3,7 @@ import lexer.*;
 import symbols.*;
 import java.io.IOException;
 import Io.*;
-
+import java.io.*;
 
 import java.io.FileOutputStream;
 import java.io.File;
@@ -15,8 +15,43 @@ public class BackendParser {
     public int usedTemp = 0;
     private AsmEnv currentEnv;
     private static FileOutputStream output;
-    
+    private static String []includes = {
+        "windows.inc",
+        "masm32.inc",
+        "gdi32.inc",
+        "user32.inc",
+        "kernel32.inc",
+        "Comctl32.inc",
+        "comdlg32.inc",
+        "shell32.inc",
+        "oleaut32.inc",
+        "ole32.inc",
+        "msvcrt.inc",
+        "dialogs.inc  "
+    };
+    private static String [] libs = {
+        "masm32.lib",
+        "gdi32.lib",
+        "user32.lib",
+        "kernel32.lib",
+        "Comctl32.lib",
+        "comdlg32.lib",
+        "shell32.lib",
+        "oleaut32.lib",
+        "ole32.lib",
+        "msvcrt.lib"
+    };
+    private static String macro = "macros.asm ";
     public void emitAsmHead() throws IOException {
+        String head = ".486\n.model flat, stdcall\noption casemap :none\n";
+        emit(head);
+        for(int i = 0 ; i < includes.length;i++)
+            emit("include " + io.programPath + "\\masm32\\include\\" + includes[i] + "\n");
+        emit("include " + io.programPath + "\\masm32\\macros\\" + macro + "\n");
+        emit("\n");
+        for(int i = 0 ; i < libs.length;i++)
+            emit("includelib " + io.programPath + "\\masm32\\lib\\" + libs[i] + "\n");
+        emit("\n");
         this.emit(Template.asmHead);
     }
     public void emitFunctionHead() throws IOException {
@@ -34,7 +69,7 @@ public class BackendParser {
             return;
         try {
             
-            File file_path = new File(io.outputDir+ File.separator + io.outputName);
+            File file_path = new File(io.outputDir+ File.separator + io.outputName + ".asm");
             if(!file_path.exists())
                 file_path.createNewFile();
             BackendParser.output = new FileOutputStream(file_path);
@@ -361,4 +396,70 @@ public class BackendParser {
         }
         this.emitAsmEnd();
     }
+    public void generateBat() throws IOException
+    {
+        String filePureName = io.outputName;
+        try {
+            String batFileName = filePureName + ".bat";
+            File file_path = new File(io.outputDir+ File.separator + batFileName);
+            if(!file_path.exists())
+                file_path.createNewFile();
+            BackendParser.output = new FileOutputStream(file_path);
+        } catch (Exception e) {
+            throw e;
+        }
+        emit("@echo off\n");
+        String objName = "\"" + io.outputDir + File.separator + filePureName + ".obj" + "\"";
+        String exeName = "\"" + io.outputDir + File.separator +filePureName + ".exe" + "\"";
+        String asmName = "\"" + io.outputDir + File.separator +filePureName + ".asm" + "\"";
+        String starName = "\"" + io.outputDir + File.separator +filePureName + ".*" + "\"";
+        String masm32Path = io.programPath + File.separator + "masm32\\bin\\";
+        emit("\tif exist " + objName +" del " +objName + "\n");
+        emit("\tif exist " + exeName + " del " + exeName + "\n");
+        emit("\t" + masm32Path + "ml /c /coff " + asmName + "\n");
+        emit("\tif errorlevel 1 goto errasm\n");
+        emit("\t" + masm32Path + "PoLink /SUBSYSTEM:CONSOLE " + objName  + "\n");
+        emit("\tif errorlevel 1 goto errlink\n");
+        emit("\tdir " + starName + "\n");
+        emit("\tgoto TheEnd\n");
+        emit("\n");
+        emit(":errlink\n\techo _\n\techo Link error\t\ngoto TheEnd\n");
+        emit(":errasm\n\techo _\n\techo Assembly Error\n\tgoto TheEnd\n");
+        emit("\n");
+        emit(":TheEnd\n");
+        emit("pause");
+        BackendParser.output.close();
+    }
+    public void generateExe()throws IOException
+    {
+        String batPath = io.outputDir + File.separator + io.outputName + ".bat";
+        File batFile = new File(batPath);
+        boolean batFileExist = batFile.exists();
+        if (batFileExist) {
+            callCmd(batPath);
+        }
+    }
+    private static void  callCmd(String locationCmd){
+        StringBuilder sb = new StringBuilder();
+        try {
+            Process child = Runtime.getRuntime().exec(locationCmd);
+            InputStream in = child.getInputStream();
+            BufferedReader bufferedReader=new BufferedReader(new InputStreamReader(in));
+            String line;
+            while((line=bufferedReader.readLine())!=null)
+            {
+                sb.append(line + "\n");
+            }
+               in.close();
+            try {
+                child.waitFor();
+            } catch (InterruptedException e) {
+                System.out.println(e);
+            }
+            System.out.println("sb:" + sb.toString());
+            System.out.println("callCmd execute finished");           
+        } catch (IOException e) {
+            System.out.println(e);
+        }
+     }
 }
