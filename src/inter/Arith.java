@@ -1,4 +1,4 @@
-package inter;//文件 Arith.java
+package inter;
 import lexer.*;import symbols.*;
 public class Arith extends Op{
     public Expr expr1,expr2;

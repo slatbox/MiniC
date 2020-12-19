@@ -2,7 +2,7 @@ package symbols;
 import java.util.*;
 import lexer.*;
 import inter.*;
-//把字符串词法单元映射为类Id的对象
+
 public class Env {
     private Hashtable<Token,Id> table;
     protected Env prev;
